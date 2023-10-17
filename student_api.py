@@ -31,11 +31,11 @@ class Student(db.Model):
 
 student_post_args = reqparse.RequestParser()
 student_post_args.add_argument(
-    "first_name", type=str, help="Name of the video is required")
+    "first_name", type=str, help="first name is required")
 student_post_args.add_argument(
-    "last_name", type=str, help="Views of the video")
-student_post_args.add_argument("gender", type=str, help="Likes on the video")
-student_post_args.add_argument("phone", type=int, help="Likes on the video")
+    "last_name", type=str, help="last name required")
+student_post_args.add_argument("gender", type=str, help="gender is required")
+student_post_args.add_argument("phone", type=int, help="phone is required")
 
 
 resource_fields = {
@@ -55,21 +55,21 @@ class StudentResource(Resource):
             abort(404, message="Could not find student with that id")
         return result
 
-    @marshal_with(resource_fields)
-    def put(self, student_id):
-        data = request.json
-        if not data:
-            abort(404, message="not data provided")
-        student = Student.query.get(student_id)
-        if not student:
-            abort(404,  message="Student doesn't exist, cannot update")
+    # @marshal_with(resource_fields)
+    # def put(self, student_id):
+    #     data = request.json
+    #     if not data:
+    #         abort(404, message="not data provided")
+    #     student = Student.query.get(student_id)
+    #     if not student:
+    #         abort(404,  message="Student doesn't exist, cannot update")
 
-        for key, value in data.items():
-            setattr(student, key, value)
+    #     for key, value in data.items():
+    #         setattr(student, key, value)
 
-        db.session.add(student)
-        db.session.commit()
-        return student.serialize(), 200
+    #     db.session.add(student)
+    #     db.session.commit()
+    #     return student.serialize(), 20
 
     @marshal_with(resource_fields)
     def delete(self, student_id):
