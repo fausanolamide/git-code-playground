@@ -31,7 +31,7 @@ def main():
     if score <= 4:
         print("You failed this test, try again")
         print(
-            f"You got {score} out of {num_questions} questions correct. Bad")~
+            f"You got {score} out of {num_questions} questions correct. Bad")
     else:
         # Display final score
         print(
