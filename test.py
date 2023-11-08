@@ -1,62 +1,114 @@
-import tkinter
 from tkinter import *
-from tkinter import messagebox
+from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy.orm import sessionmaker, declarative_base
+import subprocess
+import os
 
 root = Tk()
-root.title("To Do List")
-root.geometry("400x630+400+100")
+root.title("Blender To Do List")
+root.geometry("400x630+790+50")
 root.resizable(False, False)
 
 task_list = []
+db_engine = create_engine('sqlite:///task_list.db')
+
+# Create a base class for declarative class definitions
+Base = declarative_base()
+
+# Define a Task class to map to the database table
+
+
+class Task(Base):
+    __tablename__ = 'tasks'
+    id = Column(Integer, primary_key=True)
+    description = Column(String, nullable=False)
+
+
+# Create the table if it doesn't exist
+Base.metadata.create_all(db_engine)
+
+# Create a session to interact with the database
+Session = sessionmaker(bind=db_engine)
+db_session = Session()
+
+
+# Function to open Blender with a specific task file
+def open_blender_with_task(task_filename):
+    if not os.path.exists(task_filename):
+        os.path.exists(task_filename)
+
+    try:
+        # Specify the correct path
+        blender_executable = 'C:\\Program Files\\Blender Foundation\\Blender 3.5\\blender.exe'
+
+        subprocess.run([blender_executable, task_filename], check=True)
+    except Exception as e:
+        print(f"Error opening Blender: {e}")
+
+# Function to open Blender when a task is clicked
+
+
+def open_blender_task(task_description, task_index):
+    # Create a unique task filename based on the task's description or index
+    task_folder = 'blendlists'  # Folder to save the .blend files
+    # Create the folder if it doesn't exist
+    os.makedirs(task_folder, exist_ok=True)
+    task_filename = os.path.join(
+        task_folder, f'task_{task_index}_{task_description}.blend')
+
+    # Open Blender with the task file
+    open_blender_with_task(task_filename)
+
+# Add a task with Blender integration
 
 
 def AddTask():
     task = task_entry.get()
     task_entry.delete(0, END)
     if task:
-        with open('task_list.txt', 'a') as taskfile:
-            taskfile.write(f"/n{task}")
-    task_list.append(task)
-    listbox.insert(END, task)
+        task_list.append(task)
+        listbox.insert(END, task)
 
+        # Save the task to the database
+        new_task = Task(description=task)
+        db_session.add(new_task)
+        db_session.commit()
 
-def searchTask():
-    input = task_entry.get()
-    listbox.delete(0, END)
+        # #  create an index for the file
+        # task_index = len(task_list) - 1
 
-    for task in task_list:
-        if input in task:
-            listbox.insert(END, task)
-
-    # input = task_entry.get()
-    # task_entry.delete(0, END)
-    # for task in task_list:
-    #     if input in task:
-    #         listbox.delete(0, END)
-    #         listbox.insert(0, task)
+        # #  Call open_blender_task with the task description and index
+        # open_blender_task(task, task_index)
 
 
 def deleteTask():
-    listbox.delete(ANCHOR)
+    selected_task = listbox.curselection()
+    if selected_task:
+        task_index = selected_task[0]
+        deleted_task = task_list.pop(task_index)
+        listbox.delete(task_index)
+
+        # Delete the task from the database
+        db_session.query(Task).filter(
+            Task.description == deleted_task).delete()
+        db_session.commit()
 
 
-def openTaskFile():
-    try:
-        global task_list
-        with open('task_list.txt', 'a') as taskfile:
-            taskfile.readlines()
-        for task in task_list:
-            if task != '/n':
-                task_list.append(task)
-                listbox.insert(END, task)
-    except:
-        file = open('task_list.txt', 'w')
-        file.close()
+def searchTask():
+    keyword = task_entry.get()
+    listbox.delete(0, END)  # Clear the Listbox
+    found_tasks = db_session.query(Task).filter(
+        Task.description.ilike(f'%{keyword}%')).all()
+
+    if found_tasks:
+        for task in found_tasks:
+            listbox.insert(END, task.description)
+    else:
+        listbox.insert(END, "No results found")
 
 
-# icon
 image_top = PhotoImage(file="task.png")
-root.iconphoto(False, image_top)
+root.iconphoto(True, image_top)
 # top image
 topImage = PhotoImage(file='topbar.png')
 Label(root, image=topImage).pack()
@@ -101,8 +153,22 @@ scrollbar.config(command=listbox.yview)
 # delete
 delete_icon = PhotoImage(file='delete.png')
 Button(root, image=delete_icon, bd=0,
-       command=deleteTask).pack(side=BOTTOM, pady=13)
+       command=deleteTask).pack(side=BOTTOM, pady=8)
+open_blender_button = Button(text='Open in Blender', bg="green", command=lambda: open_blender_task(
+    listbox.get(listbox.curselection()), listbox.curselection()[0]))
+open_blender_button.pack(pady=(5, 0))
+
+# funtion to load data from a data base
+
+
+def openTaskFile():
+    tasks = db_session.query(Task).all()
+    for task in tasks:
+        task_list.append(task.description)
+        listbox.insert(END, task.description)
+
+
+# Load tasks from the database when the application starts
+openTaskFile()
 
 root.mainloop()
-with open('task_list.txt', 'a') as taskfile:
-    taskfile.readlines()
