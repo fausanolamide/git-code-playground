@@ -58,6 +58,7 @@ def open_blender_task(task_description, task_index):
 
     # Open Blender with the task file
     open_blender_with_task(task_filename)
+
 # Add a task with Blender integration
 
 
